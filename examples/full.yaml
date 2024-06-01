@@ -2,7 +2,7 @@
 
 external_components:
   - source: github://idreamshen/ESPHome-HLK-LD2450@cumulative_target_count
-    refresh: 1m
+    refresh: 5min
 
 uart:
   id: uart_bus
