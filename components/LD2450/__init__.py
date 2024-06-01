@@ -43,6 +43,7 @@ CONF_FLIP_X_AXIS = "flip_x_axis"
 CONF_OCCUPANCY = "occupancy"
 CONF_TARGET_COUNT = "target_count"
 CONF_CUMULATIVE_TARGET_COUNT = "cumulative_target_count"
+CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY = "cumulative_target_count_incr_debounce_delay"
 CONF_MAX_DISTANCE = "max_detection_distance"
 CONF_MAX_DISTANCE_MARGIN = "max_distance_margin"
 CONF_TARGETS = "targets"
@@ -290,6 +291,7 @@ CONFIG_SCHEMA = uart.UART_DEVICE_SCHEMA.extend(
         cv.Optional(CONF_CUMULATIVE_TARGET_COUNT): sensor.sensor_schema(
             accuracy_decimals=0,
         ),
+        cv.Optional(CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY, default=2): cv.int_range(0, 999999),
         cv.Optional(CONF_MAX_DISTANCE_MARGIN, default="25cm"): cv.All(
             cv.distance, cv.Range(min=0.0, max=6.0)
         ),
@@ -350,6 +352,7 @@ def to_code(config):
     cg.add(var.set_flip_x_axis(config[CONF_FLIP_X_AXIS]))
     cg.add(var.set_fast_off_detection(config[CONF_USE_FAST_OFF]))
     cg.add(var.set_max_distance_margin(config[CONF_MAX_DISTANCE_MARGIN]))
+    cg.add(var.set_cumulative_target_count_incr_debounce_delay(config[CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY]))
 
     # process target list
     if targets_config := config.get(CONF_TARGETS):

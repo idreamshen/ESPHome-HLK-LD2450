@@ -170,6 +170,11 @@ namespace esphome::ld2450
                 max_distance_margin_ = int(distance * 1000);
         }
 
+        void set_cumulative_target_count_incr_debounce_delay(int delay)
+        {
+            cumulative_target_count_incr_debounce_delay_ = delay;
+        }
+
         /**
          * @brief Set the tracking mode switch for this sensor
          *
@@ -381,5 +386,8 @@ namespace esphome::ld2450
 
         /// @brief Select options used for setting the sensors baud rate
         BaudRateSelect *baud_rate_select_ = nullptr;
+
+        int cumulative_target_count_incr_debounce_delay_ = 0;
+        int cumulative_target_count_incr_last_time_ = 0;
     };
 } // namespace esphome::ld2450

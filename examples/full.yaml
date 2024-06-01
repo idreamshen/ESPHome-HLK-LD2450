@@ -29,6 +29,7 @@ LD2450:
     name: "Max Distance"
     initial_value: 4m
   max_distance_margin: 30cm
+  cumulative_target_count_incr_debounce_delay: 2
   
   restart_button:
     name: "Restart Sensor"
