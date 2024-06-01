@@ -91,6 +91,7 @@ namespace esphome::ld2450
 #endif
 #ifdef USE_SENSOR
         SUB_SENSOR(target_count)
+        SUB_SENSOR(cumulative_target_count)
 #endif
 #ifdef USE_NUMBER
         SUB_NUMBER(max_distance)
@@ -276,6 +277,8 @@ namespace esphome::ld2450
         void set_baud_rate(BaudRate baud_rate);
 
     protected:
+        std::array<int, 3> convert_targets_present_to_array();
+        
         /**
          * @brief Parses the input message and updates related components.
          * @param msg Message buffer

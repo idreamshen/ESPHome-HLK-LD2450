@@ -1,7 +1,8 @@
 # This exmaple configuration will pollute your smart home instance. 
 
 external_components:
-  - source: github://TillFleisch/ESPHome-HLK-LD2450@main
+  - source: github://idreamshen/ESPHome-HLK-LD2450@cumulative_target_count
+    refresh: 1m
 
 uart:
   id: uart_bus
@@ -46,6 +47,8 @@ LD2450:
     name: Occupancy
   target_count:
     name: Target Count
+  cumulative_target_count:
+    name: Cumulative Target Count
 
   targets:
     - target:

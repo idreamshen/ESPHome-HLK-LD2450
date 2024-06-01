@@ -276,11 +276,30 @@ namespace esphome::ld2450
         }
     }
 
+    std::array<int, 3> LD2450::convert_targets_present_to_array() {
+        int states[3] = {0, 0, 0};
+        if (targets_.size() < 3) {
+            return {states[0], states[1], states[2]};
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (targets_[i]->is_present()) 
+            {
+                states[i] = 1;
+            }
+        }
+
+        return {states[0], states[1], states[2]};
+    }
+
     void LD2450::process_message(uint8_t *msg, int len)
     {
         sensor_available_ = true;
         last_message_received_ = millis();
         configuration_mode_ = false;
+
+        std::array<int, 3> targets_old_states = convert_targets_present_to_array();
 
         for (int i = 0; i < 3; i++)
         {
@@ -309,6 +328,15 @@ namespace esphome::ld2450
                 targets_[i]->clear();
         }
 
+        std::array<int, 3> targets_new_states = convert_targets_present_to_array();
+
+        int cumulative_target_count_incr = 0;
+        for (int i = 0; i < 3; i++) {
+            if (targets_old_states[i] == 0 && targets_new_states[i] == 1) {
+                cumulative_target_count_incr = cumulative_target_count_incr + 1;
+            }
+        }
+
         int target_count = 0;
         for (Target *target : targets_)
         {
@@ -323,6 +351,9 @@ namespace esphome::ld2450
 #ifdef USE_SENSOR
         if (target_count_sensor_ != nullptr && target_count_sensor_->state != target_count)
             target_count_sensor_->publish_state(target_count);
+
+        if (cumulative_target_count_sensor_ != nullptr)
+            cumulative_target_count_sensor_->publish_state(cumulative_target_count_sensor_->state + cumulative_target_count_incr);
 #endif
 
         // Update zones and related components
