@@ -352,8 +352,14 @@ namespace esphome::ld2450
         if (target_count_sensor_ != nullptr && target_count_sensor_->state != target_count)
             target_count_sensor_->publish_state(target_count);
 
-        if (cumulative_target_count_sensor_ != nullptr)
+        if (cumulative_target_count_sensor_ != nullptr && cumulative_target_count_incr > 0)
+        {
+            if (std::isnan(cumulative_target_count_sensor_->state)) {
+                cumulative_target_count_sensor_->state = 0;
+            }
             cumulative_target_count_sensor_->publish_state(cumulative_target_count_sensor_->state + cumulative_target_count_incr);
+        }
+            
 #endif
 
         // Update zones and related components
