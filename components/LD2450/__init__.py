@@ -292,7 +292,7 @@ CONFIG_SCHEMA = uart.UART_DEVICE_SCHEMA.extend(
         cv.Optional(CONF_CUMULATIVE_TARGET_COUNT): sensor.sensor_schema(
             accuracy_decimals=0,
         ),
-        cv.Optional(CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY, default=2): cv.int_range(0, 999999),
+        cv.Optional(CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY, default=2000): cv.int_range(0, 10000000),
         cv.Optional(CONF_CUMULATIVE_TARGET_COUNT_MAX_INCR_PER_ROUND, default=1): cv.int_range(0, 10),
         cv.Optional(CONF_MAX_DISTANCE_MARGIN, default="25cm"): cv.All(
             cv.distance, cv.Range(min=0.0, max=6.0)

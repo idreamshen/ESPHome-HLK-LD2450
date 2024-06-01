@@ -55,7 +55,7 @@ namespace esphome::ld2450
         ESP_LOGCONFIG(TAG, "  max_detection_distance: %i mm", max_detection_distance_);
         ESP_LOGCONFIG(TAG, "  max_distance_margin: %i mm", max_distance_margin_);
         ESP_LOGCONFIG(TAG, "  cumulative_target_count_max_incr_per_round: %i", cumulative_target_count_max_incr_per_round_);
-        ESP_LOGCONFIG(TAG, "  cumulative_target_count_incr_debounce_delay: %i s", cumulative_target_count_incr_debounce_delay_);
+        ESP_LOGCONFIG(TAG, "  cumulative_target_count_incr_debounce_delay: %i ms", cumulative_target_count_incr_debounce_delay_);
 #ifdef USE_BINARY_SENSOR
         LOG_BINARY_SENSOR("  ", "OccupancyBinarySensor", occupancy_binary_sensor_);
 #endif
@@ -359,7 +359,7 @@ namespace esphome::ld2450
                 
         if (cumulative_target_count_sensor_ != nullptr 
             && cumulative_target_count_incr > 0 
-            && millis() - cumulative_target_count_incr_last_time_ > cumulative_target_count_incr_debounce_delay_ * 1000)
+            && millis() - cumulative_target_count_incr_last_time_ > cumulative_target_count_incr_debounce_delay_)
         {
             cumulative_target_count_incr_last_time_ = millis();
             if (std::isnan(cumulative_target_count_sensor_->state)) {
