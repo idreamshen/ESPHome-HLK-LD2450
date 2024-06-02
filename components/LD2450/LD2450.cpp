@@ -332,6 +332,19 @@ namespace esphome::ld2450
 
         std::array<int, 3> targets_new_states = convert_targets_present_to_array();
 
+        bool targets_state_change = false;
+        for (int i = 0; i < 3; i++) {
+            if (targets_old_states[i] != targets_new_states[i]) {
+                targets_state_change = true;
+            }
+        }
+        if (targets_state_change) {
+            ESP_LOGI(TAG, "targets present states changed, old=[%d, %d, %d], new=[%d, %d, %d]",
+                targets_old_states[0], targets_old_states[1], targets_old_states[2],
+                targets_new_states[0], targets_new_states[1], targets_new_states[2]
+            );
+        }
+        
         int cumulative_target_count_incr = 0;
         for (int i = 0; i < 3; i++) {
             if (targets_old_states[i] == 0 && targets_new_states[i] == 1) {
