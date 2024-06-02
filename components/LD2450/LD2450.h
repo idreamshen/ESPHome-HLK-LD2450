@@ -95,6 +95,8 @@ namespace esphome::ld2450
 #endif
 #ifdef USE_NUMBER
         SUB_NUMBER(max_distance)
+        SUB_NUMBER(cumulative_target_count_max_incr_per_round)
+        SUB_NUMBER(cumulative_target_count_incr_debounce_delay)
 #endif
 #ifdef USE_BUTTON
         SUB_BUTTON(restart)
@@ -175,8 +177,9 @@ namespace esphome::ld2450
             cumulative_target_count_incr_debounce_delay_ = delay;
         }
 
-        void set_cumulative_target_count_max_incr_per_round(int max) {
-            cumulative_target_count_max_incr_per_round_ = max;
+        void set_cumulative_target_count_max_incr_per_round(float max) {
+            if (!std ::isnan(max))
+                cumulative_target_count_max_incr_per_round_ = int(max);
         }
 
         /**
