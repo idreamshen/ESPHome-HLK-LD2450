@@ -91,9 +91,12 @@ namespace esphome::ld2450
 #endif
 #ifdef USE_SENSOR
         SUB_SENSOR(target_count)
+        SUB_SENSOR(cumulative_target_count)
 #endif
 #ifdef USE_NUMBER
         SUB_NUMBER(max_distance)
+        SUB_NUMBER(cumulative_target_count_max_incr_per_round)
+        SUB_NUMBER(cumulative_target_count_incr_debounce_delay)
 #endif
 #ifdef USE_BUTTON
         SUB_BUTTON(restart)
@@ -167,6 +170,16 @@ namespace esphome::ld2450
         {
             if (!std ::isnan(distance))
                 max_distance_margin_ = int(distance * 1000);
+        }
+
+        void set_cumulative_target_count_incr_debounce_delay(int delay)
+        {
+            cumulative_target_count_incr_debounce_delay_ = delay;
+        }
+
+        void set_cumulative_target_count_max_incr_per_round(float max) {
+            if (!std ::isnan(max))
+                cumulative_target_count_max_incr_per_round_ = int(max);
         }
 
         /**
@@ -276,6 +289,8 @@ namespace esphome::ld2450
         void set_baud_rate(BaudRate baud_rate);
 
     protected:
+        std::array<int, 3> convert_targets_present_to_array();
+        
         /**
          * @brief Parses the input message and updates related components.
          * @param msg Message buffer
@@ -378,5 +393,14 @@ namespace esphome::ld2450
 
         /// @brief Select options used for setting the sensors baud rate
         BaudRateSelect *baud_rate_select_ = nullptr;
+
+        /// @brief The maximum value of cumulative_target_count per round of changes
+        int cumulative_target_count_max_incr_per_round_ = 0;
+
+        /// @brief Debounce delay when cumulative_target_count changes
+        int cumulative_target_count_incr_debounce_delay_ = 0;
+
+        /// @brief last time when cumulative_target_count changes
+        int cumulative_target_count_incr_last_time_ = 0;
     };
 } // namespace esphome::ld2450

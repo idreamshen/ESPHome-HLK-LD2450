@@ -54,6 +54,8 @@ namespace esphome::ld2450
         ESP_LOGCONFIG(TAG, "  flip_x_axis: %s", flip_x_axis_ ? "True" : "False");
         ESP_LOGCONFIG(TAG, "  max_detection_distance: %i mm", max_detection_distance_);
         ESP_LOGCONFIG(TAG, "  max_distance_margin: %i mm", max_distance_margin_);
+        ESP_LOGCONFIG(TAG, "  cumulative_target_count_max_incr_per_round: %i", cumulative_target_count_max_incr_per_round_);
+        ESP_LOGCONFIG(TAG, "  cumulative_target_count_incr_debounce_delay: %i ms", cumulative_target_count_incr_debounce_delay_);
 #ifdef USE_BINARY_SENSOR
         LOG_BINARY_SENSOR("  ", "OccupancyBinarySensor", occupancy_binary_sensor_);
 #endif
@@ -276,11 +278,30 @@ namespace esphome::ld2450
         }
     }
 
+    std::array<int, 3> LD2450::convert_targets_present_to_array() {
+        int states[3] = {0, 0, 0};
+        if (targets_.size() < 3) {
+            return {states[0], states[1], states[2]};
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (targets_[i]->is_present()) 
+            {
+                states[i] = 1;
+            }
+        }
+
+        return {states[0], states[1], states[2]};
+    }
+
     void LD2450::process_message(uint8_t *msg, int len)
     {
         sensor_available_ = true;
         last_message_received_ = millis();
         configuration_mode_ = false;
+
+        std::array<int, 3> targets_old_states = convert_targets_present_to_array();
 
         for (int i = 0; i < 3; i++)
         {
@@ -309,6 +330,30 @@ namespace esphome::ld2450
                 targets_[i]->clear();
         }
 
+        std::array<int, 3> targets_new_states = convert_targets_present_to_array();
+
+        bool targets_state_change = false;
+        for (int i = 0; i < 3; i++) {
+            if (targets_old_states[i] != targets_new_states[i]) {
+                targets_state_change = true;
+            }
+        }
+        if (targets_state_change) {
+            ESP_LOGI(TAG, "targets present states changed, old=[%d, %d, %d], new=[%d, %d, %d]",
+                targets_old_states[0], targets_old_states[1], targets_old_states[2],
+                targets_new_states[0], targets_new_states[1], targets_new_states[2]
+            );
+        }
+        
+        int cumulative_target_count_incr = 0;
+        for (int i = 0; i < 3; i++) {
+            if (targets_old_states[i] == 0 && targets_new_states[i] == 1) {
+                cumulative_target_count_incr = cumulative_target_count_incr + 1;
+            }
+        }
+        if (cumulative_target_count_incr > cumulative_target_count_max_incr_per_round_)
+            cumulative_target_count_incr = cumulative_target_count_max_incr_per_round_;
+
         int target_count = 0;
         for (Target *target : targets_)
         {
@@ -323,6 +368,19 @@ namespace esphome::ld2450
 #ifdef USE_SENSOR
         if (target_count_sensor_ != nullptr && target_count_sensor_->state != target_count)
             target_count_sensor_->publish_state(target_count);
+
+                
+        if (cumulative_target_count_sensor_ != nullptr 
+            && cumulative_target_count_incr > 0 
+            && millis() - cumulative_target_count_incr_last_time_ > cumulative_target_count_incr_debounce_delay_)
+        {
+            cumulative_target_count_incr_last_time_ = millis();
+            if (std::isnan(cumulative_target_count_sensor_->state)) {
+                cumulative_target_count_sensor_->state = 0;
+            }
+            cumulative_target_count_sensor_->publish_state(cumulative_target_count_sensor_->state + cumulative_target_count_incr);
+        }
+            
 #endif
 
         // Update zones and related components

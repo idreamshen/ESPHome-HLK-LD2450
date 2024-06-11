@@ -1,7 +1,8 @@
 # This exmaple configuration will pollute your smart home instance. 
 
 external_components:
-  - source: github://TillFleisch/ESPHome-HLK-LD2450@main
+  - source: github://idreamshen/ESPHome-HLK-LD2450@cumulative_target_count
+    refresh: 5min
 
 uart:
   id: uart_bus
@@ -28,6 +29,12 @@ LD2450:
     name: "Max Distance"
     initial_value: 4m
   max_distance_margin: 30cm
+  cumulative_target_count_incr_debounce_delay: 
+    name: "Cumulative Incr Debounce Delay"
+    initial_value: 1000
+  cumulative_target_count_max_incr_per_round: 
+    name: "Cumulative Max Incr"
+    initial_value: 2
   
   restart_button:
     name: "Restart Sensor"
@@ -46,6 +53,8 @@ LD2450:
     name: Occupancy
   target_count:
     name: Target Count
+  cumulative_target_count:
+    name: Cumulative Target Count
 
   targets:
     - target:

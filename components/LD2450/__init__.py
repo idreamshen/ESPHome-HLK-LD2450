@@ -29,6 +29,7 @@ from esphome.const import (
     UNIT_CENTIMETER,
     UNIT_DEGREES,
     UNIT_METER,
+    UNIT_MILLISECOND,
 )
 
 MULTI_CONF = True
@@ -42,6 +43,9 @@ CONF_USE_FAST_OFF = "fast_off_detection"
 CONF_FLIP_X_AXIS = "flip_x_axis"
 CONF_OCCUPANCY = "occupancy"
 CONF_TARGET_COUNT = "target_count"
+CONF_CUMULATIVE_TARGET_COUNT = "cumulative_target_count"
+CONF_CUMULATIVE_TARGET_COUNT_MAX_INCR_PER_ROUND = "cumulative_target_count_max_incr_per_round"
+CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY = "cumulative_target_count_incr_debounce_delay"
 CONF_MAX_DISTANCE = "max_detection_distance"
 CONF_MAX_DISTANCE_MARGIN = "max_distance_margin"
 CONF_TARGETS = "targets"
@@ -74,6 +78,8 @@ ld2450_ns = cg.esphome_ns.namespace("ld2450")
 LD2450 = ld2450_ns.class_("LD2450", cg.Component, uart.UARTDevice)
 Target = ld2450_ns.class_("Target", cg.Component)
 MaxDistanceNumber = ld2450_ns.class_("MaxDistanceNumber", cg.Component)
+CumulativeTargetCountMaxIncrPerRoundNumber = ld2450_ns.class_("CumulativeTargetCountMaxIncrPerRoundNumber", cg.Component)
+CumulativeTargetCountIncrDebounceDelayNumber = ld2450_ns.class_("CumulativeTargetCountIncrDebounceDelayNumber", cg.Component)
 PollingSensor = ld2450_ns.class_("PollingSensor", cg.PollingComponent)
 Zone = ld2450_ns.class_("Zone")
 EmptyButton = ld2450_ns.class_("EmptyButton", button.Button, cg.Component)
@@ -286,6 +292,42 @@ CONFIG_SCHEMA = uart.UART_DEVICE_SCHEMA.extend(
         cv.Optional(CONF_TARGET_COUNT): sensor.sensor_schema(
             accuracy_decimals=0,
         ),
+        cv.Optional(CONF_CUMULATIVE_TARGET_COUNT): sensor.sensor_schema(
+            accuracy_decimals=0,
+        ),
+        cv.Optional(CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY): cv.Any(
+            number.NUMBER_SCHEMA.extend(
+                {
+                    cv.GenerateID(): cv.declare_id(CumulativeTargetCountIncrDebounceDelayNumber),
+                    cv.Required(CONF_NAME): cv.string_strict,
+                    cv.Optional(CONF_INITIAL_VALUE, default="2000"): cv.All(
+                        cv.int_, cv.Range(min=0, max=60000)
+                    ),
+                    cv.Optional(CONF_STEP, default="100"): cv.All(
+                        cv.int_, cv.Range(min=1, max=10000)
+                    ),
+                    cv.Optional(CONF_RESTORE_VALUE, default=True): cv.boolean,
+                    cv.Optional(
+                        CONF_UNIT_OF_MEASUREMENT, default=UNIT_MILLISECOND
+                    ): cv.one_of(UNIT_MILLISECOND, lower="true"),
+                }
+            ).extend(cv.COMPONENT_SCHEMA),
+        ),
+        cv.Optional(CONF_CUMULATIVE_TARGET_COUNT_MAX_INCR_PER_ROUND): cv.Any(
+            number.NUMBER_SCHEMA.extend(
+                {
+                    cv.GenerateID(): cv.declare_id(CumulativeTargetCountMaxIncrPerRoundNumber),
+                    cv.Required(CONF_NAME): cv.string_strict,
+                    cv.Optional(CONF_INITIAL_VALUE, default="2"): cv.All(
+                        cv.int_, cv.Range(min=1, max=3)
+                    ),
+                    cv.Optional(CONF_STEP, default="1"): cv.All(
+                        cv.int_, cv.Range(min=1, max=1)
+                    ),
+                    cv.Optional(CONF_RESTORE_VALUE, default=True): cv.boolean,
+                }
+            ).extend(cv.COMPONENT_SCHEMA),
+        ),
         cv.Optional(CONF_MAX_DISTANCE_MARGIN, default="25cm"): cv.All(
             cv.distance, cv.Range(min=0.0, max=6.0)
         ),
@@ -373,6 +415,11 @@ def to_code(config):
         target_count_sensor = yield sensor.new_sensor(target_count_config)
         cg.add(var.set_target_count_sensor(target_count_sensor))
 
+    # Add target count sensor sensor if present
+    if cumulative_target_count_config := config.get(CONF_CUMULATIVE_TARGET_COUNT):
+        cumulative_target_count_sensor = yield sensor.new_sensor(cumulative_target_count_config)
+        cg.add(var.set_cumulative_target_count_sensor(cumulative_target_count_sensor))
+
     # Add max distance value
     if max_distance_config := config.get(CONF_MAX_DISTANCE):
         # Add number component
@@ -397,6 +444,49 @@ def to_code(config):
         elif isinstance(max_distance_config, float):
             # Set fixed value from simple config
             cg.add(var.set_max_distance(max_distance_config))
+
+    # Add cumulative target count max incr per round
+    if cumulative_target_count_max_incr_per_round_config := config.get(CONF_CUMULATIVE_TARGET_COUNT_MAX_INCR_PER_ROUND):
+        # Add number component
+        if isinstance(cumulative_target_count_max_incr_per_round_config, dict):
+            cumulative_target_count_max_incr_per_round_number = yield number.new_number(
+                cumulative_target_count_max_incr_per_round_config,
+                min_value=1.0,
+                max_value=3.0,
+                step=cumulative_target_count_max_incr_per_round_config[CONF_STEP],
+            )
+            yield cg.register_parented(cumulative_target_count_max_incr_per_round_number, config[CONF_ID])
+            yield cg.register_component(cumulative_target_count_max_incr_per_round_number, cumulative_target_count_max_incr_per_round_config)
+            cg.add(
+                cumulative_target_count_max_incr_per_round_number.set_initial_state(
+                    cumulative_target_count_max_incr_per_round_config[CONF_INITIAL_VALUE]
+                )
+            )
+            cg.add(
+                cumulative_target_count_max_incr_per_round_number.set_restore(cumulative_target_count_max_incr_per_round_config[CONF_RESTORE_VALUE])
+            )
+            cg.add(var.set_cumulative_target_count_max_incr_per_round_number(cumulative_target_count_max_incr_per_round_number))
+    # Add cumulative target count incr debounce delay value
+    if cumulative_target_count_incr_debounce_delay_config := config.get(CONF_CUMULATIVE_TARGET_COUNT_INCR_DEBOUNCE_DELAY):
+        # Add number component
+        if isinstance(cumulative_target_count_incr_debounce_delay_config, dict):
+            cumulative_target_count_incr_debounce_delay_number = yield number.new_number(
+                cumulative_target_count_incr_debounce_delay_config,
+                min_value=0.0,
+                max_value=60000.0,
+                step=cumulative_target_count_incr_debounce_delay_config[CONF_STEP],
+            )
+            yield cg.register_parented(cumulative_target_count_incr_debounce_delay_number, config[CONF_ID])
+            yield cg.register_component(cumulative_target_count_incr_debounce_delay_number, cumulative_target_count_incr_debounce_delay_config)
+            cg.add(
+                cumulative_target_count_incr_debounce_delay_number.set_initial_state(
+                    cumulative_target_count_incr_debounce_delay_config[CONF_INITIAL_VALUE]
+                )
+            )
+            cg.add(
+                cumulative_target_count_incr_debounce_delay_number.set_restore(cumulative_target_count_incr_debounce_delay_config[CONF_RESTORE_VALUE])
+            )
+            cg.add(var.set_cumulative_target_count_incr_debounce_delay_number(cumulative_target_count_incr_debounce_delay_number))
 
     # Add sensor restart button if present
     if restart_config := config.get(CONF_RESTART_BUTTON):
